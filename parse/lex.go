@@ -247,13 +247,9 @@ func stateEnd(l *lexer) stateFn {
 // a variable which will be substituted with a concrete value during expression
 // evaluation.
 func stateIdentifier(l *lexer) stateFn {
-loop:
-	for {
-		switch r := l.next(); {
-		case isAlphanum(r):
-		default:
-			break loop
-		}
+	r := l.next()
+	for isAlphanum(r) {
+		r = l.next()
 	}
 
 	l.backup()
@@ -345,10 +341,9 @@ loop:
 
 // stateNumber scans a numeric value from the input stream.
 func stateNumber(l *lexer) stateFn {
-loop:
-	switch r := l.next(); {
-	case isNumeric(r) || r == '.':
-		goto loop
+	r := l.next()
+	for isNumeric(r) || r == '.' {
+		r = l.next()
 	}
 
 	l.backup()
@@ -359,11 +354,7 @@ loop:
 
 // isWhitespace reports whether r is a space character.
 func isWhitespace(r rune) bool {
-	switch r {
-	case ' ', '\t', '\n', '\r':
-		return true
-	}
-	return false
+	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
 }
 
 // isNumeric reports whether r is a digit.
