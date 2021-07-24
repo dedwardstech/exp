@@ -214,11 +214,11 @@ func newLexer(input string) *lexer {
 
 // stateInit is the initial state of the lexer.
 func stateInit(l *lexer) stateFn {
-start:
+
 	switch r := l.next(); {
 	case isWhitespace(r):
 		l.ignore()
-		goto start
+		return stateInit
 	case isNumeric(r):
 		return stateNumber
 	case isAlphanum(r):
@@ -231,10 +231,10 @@ start:
 		return stateDoubleQuote
 	case r == '(':
 		l.emit(T_LEFT_PAREN)
-		goto start
+		return stateInit
 	case r == ')':
 		l.emit(T_RIGHT_PAREN)
-		goto start
+		return stateInit
 	}
 
 	return stateEnd
