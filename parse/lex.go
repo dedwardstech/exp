@@ -355,7 +355,7 @@ func stateNumber(l *lexer) stateFn {
 	return stateInit
 }
 
-func advanceUntil(l *lexer, until func (rune) bool) rune {
+func advanceUntil(l *lexer, until func(rune) bool) rune {
 	r := l.next()
 	for until(r) {
 		r = l.next()
