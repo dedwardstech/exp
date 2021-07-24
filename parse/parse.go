@@ -73,7 +73,7 @@ loop:
 	return tree, err
 }
 
-// newParser creates a new parser using the suppliad lexer.
+// newParser creates a new parser using the supplied lexer.
 func newParser(l *lexer) *parser {
 	return &parser{lexer: l}
 }

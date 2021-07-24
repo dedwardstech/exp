@@ -2,7 +2,7 @@ package exp
 
 import "net"
 
-// Conatins IP
+// Contains IP
 
 type expContainsIP struct {
 	key  string

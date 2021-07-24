@@ -26,7 +26,7 @@ func Match(key, str string) Exp {
 	return expMatch{key, str}
 }
 
-// MatchAny is an expression that evaluates to true if any of the strs are equal
+// MatchAny is an expression that evaluates to true if any of the strings are equal
 // to the value pointed to by key.
 //
 // 	m := Map{"foo": "bar"}
@@ -37,6 +37,7 @@ func MatchAny(key string, strs ...string) Exp {
 	for i, str := range strs {
 		exp[i] = Match(key, str)
 	}
+
 	return Or(exp...)
 }
 
@@ -116,7 +117,7 @@ func (e expLen) String() string {
 	return sprintf("[len(%s)==%d]", e.key, e.length)
 }
 
-// Len evalates to true if the length of the string pointed to by key is equal
+// Len evaluates to true if the length of the string pointed to by key is equal
 // to length.
 func Len(key string, length int) Exp {
 	return expLen{key, length}

@@ -11,7 +11,7 @@ import (
 )
 
 // The Exp interface represents a tree node. There are several implementations
-// of the interface in this package, but one may define custom Exp's as long as
+// of the interface in this package, but one may define custom Exps as long as
 // they implement the Eval function.
 type Exp interface {
 	Eval(Params) bool
