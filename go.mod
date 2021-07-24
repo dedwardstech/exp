@@ -1,3 +1,3 @@
-module github.com/alexkappa/exp
+module github.com/dedwardstech/exp
 
 go 1.12

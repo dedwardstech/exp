@@ -7,7 +7,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/alexkappa/exp/parse"
+	"github.com/dedwardstech/exp/parse"
 )
 
 // The Exp interface represents a tree node. There are several implementations
