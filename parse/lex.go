@@ -74,11 +74,11 @@ var tokenName = map[tokenType]string{
 
 // String satisfies the fmt.Stringer interface making it easier to print tokens.
 func (i tokenType) String() string {
-	s := tokenName[i]
-	if s == "" {
+	if s := tokenName[i]; s == "" {
 		return fmt.Sprintf("T_UNKNOWN_%d", int(i))
+	} else {
+		return s
 	}
-	return s
 }
 
 const eof = -1
@@ -102,10 +102,12 @@ type lexer struct {
 func (l *lexer) next() (r rune) {
 	if l.pos >= len(l.input) {
 		l.width = 0
+
 		return eof
 	}
 	r, l.width = utf8.DecodeRuneInString(l.input[l.pos:])
 	l.pos += l.width
+
 	return r
 }
 
@@ -118,6 +120,7 @@ func (l *lexer) seek(n int) {
 func (l *lexer) peek() rune {
 	r := l.next()
 	l.backup()
+
 	return r
 }
 
@@ -170,6 +173,7 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 		l.lineNum(),
 		l.columnNum(),
 	}
+
 	return nil
 }
 
@@ -191,6 +195,7 @@ func (l *lexer) String() string {
 	fmt.Fprintf(w, "Index     : %d\n", l.pos)
 	fmt.Fprintf(w, "Current   : %q\n", l.input[l.pos])
 	fmt.Fprintf(w, "Buffer    : %q\n", l.input[l.start:l.pos])
+
 	return w.String()
 }
 
@@ -199,8 +204,9 @@ func newLexer(input string) *lexer {
 	l := &lexer{
 		input:  input,
 		tokens: make(chan token, 2),
+		state:  stateInit,
 	}
-	l.state = stateInit
+
 	return l
 }
 
@@ -230,6 +236,7 @@ start:
 		l.emit(T_RIGHT_PAREN)
 		goto start
 	}
+
 	return stateEnd
 }
 
@@ -243,14 +250,13 @@ func stateEnd(l *lexer) stateFn {
 	return nil
 }
 
-// stateIdentifier scans an indentifier from the input stream. An identifier is
+// stateIdentifier scans an identifier from the input stream. An identifier is
 // a variable which will be substituted with a concrete value during expression
 // evaluation.
 func stateIdentifier(l *lexer) stateFn {
-	r := l.next()
-	for isAlphanum(r) {
-		r = l.next()
-	}
+	advanceUntil(l, func(r rune) bool {
+		return isAlphanum(r)
+	})
 
 	l.backup()
 
@@ -266,10 +272,9 @@ func stateIdentifier(l *lexer) stateFn {
 
 // stateOperator scans an operator from the input stream.
 func stateOperator(l *lexer) stateFn {
-	r := l.next()
-	for isOperator(r) {
-		r = l.next()
-	}
+	advanceUntil(l, func(r rune) bool {
+		return isOperator(r)
+	})
 
 	l.backup()
 
@@ -301,19 +306,19 @@ func stateOperator(l *lexer) stateFn {
 // stream.
 func stateSingleQuote(l *lexer) stateFn {
 	l.ignore()
-loop:
-	for {
-		switch l.next() {
-		case '\'':
-			l.backup()
-			l.emit(T_IDENTIFIER)
-			l.next()
-			l.ignore()
-			break loop
-		case eof:
-			return l.errorf("unexpected EOF")
-		}
+
+	r := advanceUntil(l, func(r rune) bool {
+		return r != '\'' && r != eof
+	})
+
+	if r == eof {
+		return l.errorf("unexpected EOF")
 	}
+
+	l.backup()
+	l.emit(T_IDENTIFIER)
+	l.next()
+	l.ignore()
 
 	return stateInit
 }
@@ -322,34 +327,41 @@ loop:
 // stream.
 func stateDoubleQuote(l *lexer) stateFn {
 	l.ignore()
-loop:
-	for {
-		switch l.next() {
-		case '"':
-			l.backup()
-			l.emit(T_STRING)
-			l.next()
-			l.ignore()
-			break loop
-		case eof:
-			return l.errorf("unexpected EOF")
-		}
+	r := advanceUntil(l, func(r rune) bool {
+		return r != '"' && r != eof
+	})
+
+	if r == eof {
+		return l.errorf("unexpected EOF")
 	}
+
+	l.backup()
+	l.emit(T_STRING)
+	l.next()
+	l.ignore()
 
 	return stateInit
 }
 
 // stateNumber scans a numeric value from the input stream.
 func stateNumber(l *lexer) stateFn {
-	r := l.next()
-	for isNumeric(r) || r == '.' {
-		r = l.next()
-	}
+	advanceUntil(l, func(r rune) bool {
+		return isNumeric(r) || r == '.'
+	})
 
 	l.backup()
 	l.emit(T_NUMBER)
 
 	return stateInit
+}
+
+func advanceUntil(l *lexer, until func (rune) bool) rune {
+	r := l.next()
+	for until(r) {
+		r = l.next()
+	}
+
+	return r
 }
 
 // isWhitespace reports whether r is a space character.
