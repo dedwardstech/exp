@@ -160,8 +160,9 @@ func (l *lexer) lineNum() int {
 func (l *lexer) columnNum() int {
 	if lf := strings.LastIndex(l.input[:l.pos], "\n"); lf != -1 {
 		return len(l.input[lf+1 : l.pos])
+	} else {
+		return len(l.input[:l.pos])
 	}
-	return len(l.input[:l.pos])
 }
 
 // error returns an error token and terminates the scan by passing
@@ -187,6 +188,15 @@ func (l *lexer) token() token {
 			l.state = l.state(l)
 		}
 	}
+}
+
+func (l *lexer) advanceUntil(until func(r rune) bool) rune {
+	r := l.next()
+	for until(r) {
+		r = l.next()
+	}
+
+	return r
 }
 
 func (l *lexer) String() string {
@@ -254,7 +264,7 @@ func stateEnd(l *lexer) stateFn {
 // a variable which will be substituted with a concrete value during expression
 // evaluation.
 func stateIdentifier(l *lexer) stateFn {
-	advanceUntil(l, func(r rune) bool {
+	l.advanceUntil(func(r rune) bool {
 		return isAlphanum(r)
 	})
 
@@ -272,7 +282,7 @@ func stateIdentifier(l *lexer) stateFn {
 
 // stateOperator scans an operator from the input stream.
 func stateOperator(l *lexer) stateFn {
-	advanceUntil(l, func(r rune) bool {
+	l.advanceUntil(func(r rune) bool {
 		return isOperator(r)
 	})
 
@@ -307,7 +317,7 @@ func stateOperator(l *lexer) stateFn {
 func stateSingleQuote(l *lexer) stateFn {
 	l.ignore()
 
-	r := advanceUntil(l, func(r rune) bool {
+	r := l.advanceUntil(func(r rune) bool {
 		return r != '\'' && r != eof
 	})
 
@@ -327,7 +337,7 @@ func stateSingleQuote(l *lexer) stateFn {
 // stream.
 func stateDoubleQuote(l *lexer) stateFn {
 	l.ignore()
-	r := advanceUntil(l, func(r rune) bool {
+	r := l.advanceUntil(func(r rune) bool {
 		return r != '"' && r != eof
 	})
 
@@ -345,7 +355,7 @@ func stateDoubleQuote(l *lexer) stateFn {
 
 // stateNumber scans a numeric value from the input stream.
 func stateNumber(l *lexer) stateFn {
-	advanceUntil(l, func(r rune) bool {
+	l.advanceUntil(func(r rune) bool {
 		return isNumeric(r) || r == '.'
 	})
 
@@ -353,15 +363,6 @@ func stateNumber(l *lexer) stateFn {
 	l.emit(T_NUMBER)
 
 	return stateInit
-}
-
-func advanceUntil(l *lexer, until func(rune) bool) rune {
-	r := l.next()
-	for until(r) {
-		r = l.next()
-	}
-
-	return r
 }
 
 // isWhitespace reports whether r is a space character.
